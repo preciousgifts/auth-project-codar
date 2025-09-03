@@ -17,6 +17,9 @@ const registerUser = async (req, res) => {
       last_name,
       email,
       phone,
+      secret_question_1,
+      secret_question_2,
+      secret_question_3,
       address,
       role,
     } = req.body;
@@ -24,13 +27,17 @@ const registerUser = async (req, res) => {
     const checkExistingUser = await Profile.findOne({
       $or: [{ username }, { email }],
     }); // can also use and if we're to validate two things ..
+
     if (
       !username ||
       !password ||
       !first_name ||
       !last_name ||
       !email ||
-      !phone
+      !phone ||
+      !secret_question_1 ||
+      !secret_question_2 ||
+      !secret_question_3
     ) {
       res.status(400).json({
         success: false,
@@ -45,6 +52,8 @@ const registerUser = async (req, res) => {
       });
     }
 
+    // const your_mother_maiden_name = secret_question;
+
     const newProfile = new Profile({
       username,
       password: bcrypt.hashSync(password, 6), // Hashing the password with a minimum length of 6 characters
@@ -53,6 +62,9 @@ const registerUser = async (req, res) => {
       last_name,
       email,
       phone,
+      secretQuestion1: secret_question_1,
+      secretQuestion2: secret_question_2,
+      secretQuestion3: secret_question_3,
       address,
       role: role || "user",
     });
@@ -126,4 +138,84 @@ const loginUser = async (req, res) => {
   });
 };
 
-export { registerUser, loginUser };
+const passwordReset = async (req, res) => {
+  try {
+    const {
+      username,
+      secret_question_1,
+      secret_question_2,
+      secret_question_3,
+      new_password,
+    } = req.body;
+
+    if (
+      !username ||
+      !secret_question_1 ||
+      !secret_question_2 ||
+      !secret_question_3 ||
+      !new_password
+    ) {
+      res.status(400).json({
+        success: false,
+        message: "Username, secret question and new password are required",
+      });
+    }
+
+    const checkUser = await Profile.findOne({
+      username,
+    });
+
+    //Check if profile exists
+    if (!checkUser) {
+      res.status(400).json({
+        success: false,
+        message: "User does not exist. Kindly check and try again",
+      });
+    }
+
+    //validate the secret questions (if correct)
+    if (checkUser.secretQuestion1 !== secret_question_1) {
+      res.status(400).json({
+        success: false,
+        message: "Secret question 1's answer is incorrect",
+      });
+    }
+    if (checkUser.secretQuestion2 !== secret_question_2) {
+      res.status(400).json({
+        success: false,
+        message: "Secret question 2's answer is incorrect",
+      });
+    }
+    if (checkUser.secretQuestion3 !== secret_question_3) {
+      res.status(400).json({
+        success: false,
+        message: "Secret question 3's answer is incorrect",
+      });
+    }
+
+    const updatedProfile = await Profile.updateOne(
+      {
+        username: username,
+        secretQuestion1: secret_question_1,
+        secretQuestion2: secret_question_2,
+        secretQuestion3: secret_question_3,
+      },
+      { $set: { password: bcrypt.hashSync(new_password, 8) } }
+    );
+
+    res.status(201).json({
+      success: true,
+      message: "Record updated successfully",
+      data: updatedProfile,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      success: false,
+      message: "Something went wrong, please try again later",
+      error: error.message,
+    });
+  }
+};
+
+export { registerUser, loginUser, passwordReset };

@@ -49,6 +49,21 @@ const profileSchema = new mongoose.Schema({
     type: String,
     trim: true,
   },
+  secretQuestion1: {
+    required: [true, "Secret question is required"],
+    type: String,
+    trim: true,
+  },
+  secretQuestion2: {
+    required: [true, "Secret question is required"],
+    type: String,
+    trim: true,
+  },
+  secretQuestion3: {
+    required: [true, "Secret question is required"],
+    type: String,
+    trim: true,
+  },
   role: {
     required: [true, "Role is required"],
     type: String,
